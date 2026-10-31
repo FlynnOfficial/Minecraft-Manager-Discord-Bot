@@ -1,0 +1,16 @@
+.env
+.venv/
+.research/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+data/
+logs/
+certs/*
+!certs/.gitkeep
+dist/
+service/MinecraftDiscordBot.exe
+service/MinecraftDiscordBot.xml
+*.zip
