@@ -1,0 +1,27 @@
+<service>
+  <id>MinecraftDiscordBot</id>
+  <name>Minecraft Discord Bot</name>
+  <description>Painel Discord privado; controla apenas Minecraft pela API Crafty.</description>
+  <executable>__PYTHON__</executable>
+  <startarguments>-m minecraft_bot run</startarguments>
+  <stopexecutable>__PYTHON__</stopexecutable>
+  <stoparguments>-m minecraft_bot stop</stoparguments>
+  <workingdirectory>__ROOT__</workingdirectory>
+  <env name="PYTHONUTF8" value="1"/>
+  <env name="PYTHONUNBUFFERED" value="1"/>
+  <startmode>Automatic</startmode>
+  <delayedAutoStart>true</delayedAutoStart>
+  <stoptimeout>45 sec</stoptimeout>
+  <onfailure action="restart" delay="30 sec"/>
+  <onfailure action="restart" delay="60 sec"/>
+  <onfailure action="restart" delay="120 sec"/>
+  <resetfailure>1 hour</resetfailure>
+  <serviceaccount>
+    <username>NT AUTHORITY\LocalService</username>
+  </serviceaccount>
+  <logpath>__ROOT__\logs</logpath>
+  <log mode="roll-by-size">
+    <sizeThreshold>2048</sizeThreshold>
+    <keepFiles>3</keepFiles>
+  </log>
+</service>
