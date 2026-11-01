@@ -18,6 +18,10 @@ from .status import StatusProbe
 from .storage import InstanceLock, Store
 
 
+class DiagnosticError(Exception):
+    """Only application-authored messages, never raw API/exception payloads."""
+
+
 def make_store(config: Config) -> Store:
     return Store(
         config.data_dir,
@@ -73,12 +77,21 @@ async def run(config: Config) -> None:
 async def doctor(config: Config, listing: bool = False) -> None:
     async with CraftyClient(config) as api:
         servers = await api.servers()
+        if not servers:
+            raise DiagnosticError(
+                "Conexao com Crafty OK, mas este token nao tem servidores acessiveis. "
+                "Em Panel Settings, associe o usuario dono da chave a um cargo com "
+                "acesso ao Minecraft. Confira COMMANDS no cargo e na chave API."
+            )
         if listing:
             for server in servers:
                 print(f"{server.get('server_id')}  {str(server.get('server_name', ''))[:100]}")
             return
         if not any(str(s.get("server_id")) == config.server_id for s in servers):
-            raise ValueError("O token nao tem acesso ao servidor configurado.")
+            raise DiagnosticError(
+                "O servidor configurado nao aparece entre os acessiveis. "
+                "Execute list-servers, confira CRAFTY_SERVER_ID e o cargo do usuario no Crafty."
+            )
         monitor = Monitor(config, api, StatusProbe(config), make_store(config))
         snapshot = await monitor.refresh()
         print(f"Crafty instalado (informado): {config.crafty_version}")
@@ -86,7 +99,9 @@ async def doctor(config: Config, listing: bool = False) -> None:
         print(f"Status local respondeu: {snapshot.live is not None}")
         print("Diagnostico somente leitura: nenhuma acao de energia foi enviada.")
         if not snapshot.crafty_ok or not snapshot.fresh:
-            raise ValueError("Contrato ou conectividade nao validado; consulte README e logs.")
+            raise DiagnosticError(
+                "Contrato ou conectividade nao validado; veja o diagnostico acima."
+            )
 
 
 def main() -> int:
@@ -138,6 +153,10 @@ def main() -> int:
             else:
                 asyncio.run(run(config))
         return 0
+    except DiagnosticError as error:
+        logging.getLogger(__name__).error("diagnostic_failed reason=%s", error)
+        print(f"Diagnostico: {error}")
+        return 1
     except (Exception, KeyboardInterrupt) as error:
         logging.getLogger(__name__).error("fatal type=%s", type(error).__name__)
         print(f"Falha ({type(error).__name__}). Confira .env, README e logs/bot.jsonl.")

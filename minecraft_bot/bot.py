@@ -47,13 +47,17 @@ class MinecraftBot(discord.Client):
         snapshot = self.monitor.snapshot
         blocked = (
             not snapshot.crafty_ok
-            or not snapshot.fresh
-            or snapshot.state in {State.UNAVAILABLE, State.STARTING, State.STOPPING}
+            or (not snapshot.fresh and snapshot.state != State.OFFLINE)
+            or snapshot.state in {
+                State.UNAVAILABLE,
+                State.STARTING,
+                State.STOPPING,
+            }
             or bool(self.store.value.get("pending"))
         )
         try:
             await self.panel.publish(
-                snapshot, self.monitor.last_success, ControlView(self, blocked=blocked), blocked
+                snapshot, self.monitor.last_success, ControlView(self, blocked=blocked, state=snapshot.state), blocked
             )
         except discord.NotFound:
             self.panel.channel = None

@@ -10,6 +10,7 @@ import discord
 from .logging_setup import audit
 from .operations import Rejected, Ticket
 from .security import authorized
+from .models import State
 
 if TYPE_CHECKING:
     from .bot import MinecraftBot
@@ -95,11 +96,23 @@ class ConfirmView(discord.ui.View):
 
 
 class ControlView(discord.ui.View):
-    def __init__(self, bot: MinecraftBot, *, blocked: bool = False):
+    def __init__(
+        self,
+        bot: MinecraftBot,
+        *,
+        blocked: bool = False,
+        state: State | None = None,
+    ):
         super().__init__(timeout=None)
         self.bot = bot
-        self.start_button.disabled = blocked
-        self.stop_button.disabled = blocked
+
+        self.start_button.disabled = blocked or (
+            state is not None and state != State.OFFLINE
+        )
+
+        self.stop_button.disabled = blocked or (
+            state is not None and state != State.ONLINE
+        )
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if not await permission(self.bot, interaction):

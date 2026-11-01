@@ -48,7 +48,9 @@ class Operations:
     def _known(snapshot: Snapshot) -> None:
         if not snapshot.crafty_ok:
             raise Rejected("Crafty indisponível. Nenhuma ação foi enviada.")
-        if not snapshot.fresh or snapshot.running is None:
+        if snapshot.running is None or (
+            not snapshot.fresh and snapshot.state != State.OFFLINE
+        ):
             raise Rejected("Não há estado recente e confiável do Minecraft.")
         if snapshot.waiting or snapshot.state in {State.STARTING, State.STOPPING}:
             raise Rejected("O servidor já está em transição. Aguarde.")

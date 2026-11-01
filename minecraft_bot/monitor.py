@@ -87,7 +87,7 @@ class Monitor:
             state = State.STARTING
         if maintenance:
             state, detail = State.UNAVAILABLE, "Conectado; manutenção em andamento no Crafty"
-        elif not fresh:
+        elif not fresh and running:
             state, detail = (
                 State.UNAVAILABLE,
                 "Conectado; estatísticas antigas ou sem data confiável",
@@ -96,7 +96,7 @@ class Monitor:
             state, detail = State.UNAVAILABLE, "Conectado; processo e status divergem"
         elif running and not live and not ping_ok:
             state, detail = State.UNAVAILABLE, "Conectado; processo ativo, prontidão não confirmada"
-        if fresh and not running and not live and not waiting:
+        if not running and not live and not waiting:
             count, names = 0, ()
         return Snapshot(
             state=state,
@@ -124,14 +124,25 @@ class Monitor:
         if not pending:
             return result
         target = pending["action"] == "start_server"
-        after = result.collected and result.collected.timestamp() > pending["sent_at"]
+        if target:
+            after = (
+                result.collected is not None
+                and result.collected.timestamp() > pending["sent_at"]
+            )
+        else:
+            after = (
+                result.observed is not None
+                and result.observed.timestamp() > pending["sent_at"]
+            )
         confirmed = (
             result.crafty_ok
-            and result.fresh
             and after
             and not result.waiting
             and result.running is target
-            and ((target and result.live is not None) or (not target and result.live is None))
+            and (
+                (target and result.fresh and result.live is not None)
+                or (not target and result.live is None)
+            )
         )
         if confirmed:
             self.store.set(pending=None)
